@@ -4,8 +4,12 @@ import com.aventstack.extentreports.MediaEntityBuilder;
 import com.aventstack.extentreports.Status;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 import org.apache.commons.io.FileUtils;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
@@ -17,10 +21,13 @@ import org.w3c.dom.Document;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
     private static WebDriver driver;
@@ -31,7 +38,9 @@ public class Main {
     @BeforeClass
     public static void init() {
         System.setProperty("webdriver.chrome.driver", "/Users/batman/Downloads/chromedriver");
-        driver = new ChromeDriver();
+        ChromeOptions chromeOptions = new ChromeOptions();
+        chromeOptions.setPageLoadStrategy(PageLoadStrategy.EAGER);
+        driver = new ChromeDriver(chromeOptions);
         driver.manage().window().maximize();
         wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         ExtentSparkReporter spark = new ExtentSparkReporter("/Users/batman/IntelliJProjects/ExEleven/spark.html");
@@ -82,6 +91,7 @@ public class Main {
             test.pass("Successfully browsed to: '" + url + "' retrieved from xml.");
         } catch(Exception e) {
             e.printStackTrace();
+            test.fail("Could not get url from xml file.");
         }
     }
 
@@ -148,6 +158,22 @@ public class Main {
         }
     }
 
+    /* Ex. 5 */
+    @Test
+    public void test05_getUrlFromJson() {
+        ArrayList<String> keyNames = new ArrayList<>();
+        keyNames.add("url");
+        HashMap<String, String> data = readFromJson("src/main/resources/config.json", keyNames);
+        System.out.println(data.toString());
+        String url = data.get("url");
+        driver.get(url);
+        if (driver.getCurrentUrl().equalsIgnoreCase(url))
+            test.pass("Successfully browsed to: '" + url + "' retrieved from json.");
+        else {
+            test.fail("Could not get url from json file.");
+        }
+    }
+
     @AfterClass
     public static void tearDown() {
         driver.quit();
@@ -178,6 +204,26 @@ public class Main {
         for (String keyName: keyNames) {
             String content = doc.getElementsByTagName(keyName).item(0).getTextContent();
             data.put(keyName, content);
+        }
+        return data;
+    }
+
+    private static HashMap<String, String> readFromJson(String filePath, ArrayList<String> keyNames) {
+        HashMap<String, String> data = new HashMap<>();
+        JSONParser jsonParser = new JSONParser();
+        try (FileReader reader = new FileReader(filePath)) {
+            JSONObject jo = (JSONObject) jsonParser.parse(reader);
+            for (String keyName: keyNames) {
+                String content = (String) jo.get(keyName);
+                data.put(keyName, content);
+            }
+            return data;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
         return data;
     }
