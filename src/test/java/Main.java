@@ -3,6 +3,7 @@ import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.MediaEntityBuilder;
 import com.aventstack.extentreports.Status;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
+import com.google.gson.Gson;
 import org.apache.commons.io.FileUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -24,10 +25,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.TimeUnit;
 
 public class Main {
     private static WebDriver driver;
@@ -171,6 +173,26 @@ public class Main {
             test.pass("Successfully browsed to: '" + url + "' retrieved from json.");
         else {
             test.fail("Could not get url from json file.");
+        }
+    }
+
+    /* Ex. 6 */
+    @Test
+    public void test06_deserializeJsonToObject() {
+        try {
+            /* Way 1 */
+            FileReader json = new FileReader("src/main/resources/config.json");
+            Config configObject = new Gson().fromJson(json, Config.class);
+            driver.get(configObject.getUrl());
+            
+            /* Way 2 */
+            String jsonString = Files.readString(Path.of("src/main/resources/config.json"));
+            Config anotherConfigObject = new Gson().fromJson(jsonString, Config.class);
+            System.out.println(anotherConfigObject.getUrl());
+        } catch(FileNotFoundException e) {
+            e.printStackTrace();
+        } catch(IOException e) {
+            e.printStackTrace();
         }
     }
 
